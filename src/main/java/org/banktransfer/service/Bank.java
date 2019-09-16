@@ -1,13 +1,17 @@
 package org.banktransfer.service;
 
 import org.banktransfer.model.Account;
+import org.banktransfer.model.TransferRequestDTO;
 import org.banktransfer.model.User;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Bank {
-    private Map<User, List<Account>> map = new HashMap<>();
+    private Map<User, List<Account>> map = new ConcurrentHashMap<>();
 
     public Map<User, List<Account>> getMap() {
         return map;
@@ -15,7 +19,6 @@ public class Bank {
 
     public void addUser(User user) {
         map.putIfAbsent(user, new ArrayList<>());
-
     }
 
     public void deleteUser(User user) {
@@ -63,5 +66,15 @@ public class Bank {
         dstAccount.setValue(dstAccount.getValue().add(amount));
 
         return true;
+    }
+
+    public boolean transferMoney(TransferRequestDTO transferRequestDTO) {
+        return transferMoney(
+                transferRequestDTO.getSrcPassport(),
+                transferRequestDTO.getSrcRequisite(),
+                transferRequestDTO.getDstPassport(),
+                transferRequestDTO.getDstRequisite(),
+                transferRequestDTO.getAmount()
+        );
     }
 }

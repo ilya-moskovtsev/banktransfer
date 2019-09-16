@@ -23,7 +23,6 @@ public class BankTest {
                 new User("name3", "300"), new ArrayList<>()
         );
 
-
         final Bank bank = new Bank();
         bank.addUser(new User("name1", "100"));
         bank.addUser(new User("name2", "200"));
