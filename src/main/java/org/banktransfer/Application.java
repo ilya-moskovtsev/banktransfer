@@ -17,23 +17,45 @@ import org.banktransfer.model.User;
 import org.banktransfer.service.Bank;
 
 public class Application {
+    private Bank bank;
+    private ObjectMapper mapper;
+    private int serverPort;
+    private String path;
 
-    private static final Bank BANK = new Bank();
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final int SERVER_PORT = 8000;
-    public static final String PATH = "/api/transfer";
+    public Application(int serverPort, String path) {
+        this.bank = new Bank();
+        this.mapper = new ObjectMapper();
+        this.serverPort = serverPort;
+        this.path = path;
+    }
 
     public static void main(String[] args) throws IOException {
-        init();
+        new Application(8000, "/api/transfer").start();
+    }
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(SERVER_PORT), 0);
-        server.createContext(PATH, (handler -> {
+    private void start() throws IOException {
+        init();
+        runServer();
+    }
+
+    private void init() {
+        User sender = new User("senderName", "senderPassport");
+        User recipient = new User("recipientName", "recipientPassport");
+        bank.addUser(sender);
+        bank.addAccountToUser(sender.getPassport(), new Account(new BigDecimal(1000), "senderRequisites"));
+        bank.addUser(recipient);
+        bank.addAccountToUser(recipient.getPassport(), new Account(new BigDecimal(1000), "recipientRequisites"));
+    }
+
+    private void runServer() throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(serverPort), 0);
+        server.createContext(path, (handler -> {
 
             String json = jsonFromPost(handler);
 
-            TransferRequestDTO transferRequestDTO = MAPPER.readValue(json, TransferRequestDTO.class);
+            TransferRequestDTO transferRequestDTO = mapper.readValue(json, TransferRequestDTO.class);
 
-            boolean hasTransferred = BANK.transferMoney(transferRequestDTO);
+            boolean hasTransferred = bank.transferMoney(transferRequestDTO);
 
             String respText = hasTransferred ? "Transfer Successful" : "Transfer Failed";
             handler.sendResponseHeaders(200, respText.getBytes().length);
@@ -46,7 +68,7 @@ public class Application {
         server.start();
     }
 
-    private static String jsonFromPost(HttpExchange exchange) throws IOException {
+    private String jsonFromPost(HttpExchange exchange) throws IOException {
         InputStream is = exchange.getRequestBody();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buffer = new byte[2048];
@@ -56,14 +78,5 @@ public class Application {
         }
         bos.close();
         return new String(bos.toByteArray(), StandardCharsets.UTF_8);
-    }
-
-    private static void init() {
-        User sender = new User("senderName", "senderPassport");
-        User recipient = new User("recipientName", "recipientPassport");
-        BANK.addUser(sender);
-        BANK.addAccountToUser(sender.getPassport(), new Account(new BigDecimal(1000), "senderRequisites"));
-        BANK.addUser(recipient);
-        BANK.addAccountToUser(recipient.getPassport(), new Account(new BigDecimal(1000), "recipientRequisites"));
     }
 }
